@@ -1,5 +1,14 @@
-﻿// See https://aka.ms/new-console-template for more information
+﻿using Spectre.Console;
+using System;
 
-using Solution.Views;
-
-ConsoleUI.Run();
+namespace Park
+{
+    public class Program
+    {
+        public static void Main(string[] args)
+        {
+            Menu menu = new();
+            menu.DisplayMenu();
+        }
+    }
+}
