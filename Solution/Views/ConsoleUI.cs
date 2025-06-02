@@ -20,7 +20,7 @@ public static class ConsoleUI
         AnsiConsole.MarkupLine("[grey]Press any key to start...[/]");
         Console.ReadKey(true);
 
-// Main program loop showing the user menu
+        // Main program loop showing the user menu
         while (true)
         {
             AnsiConsole.Clear();
@@ -112,9 +112,75 @@ public static class ConsoleUI
 
     private static void PlaceRide()
     {
+        AnsiConsole.Clear();
+
+        // Choisir un manège
+        var rides = _rideService.GetAvailableRides();
+        var selectedRide = AnsiConsole.Prompt(
+            new SelectionPrompt<Ride>()
+                .Title("[green]Select a ride to place:[/]")
+                .UseConverter(r => $"{r.Name} ({r.Type})")
+                .AddChoices(rides));
+
+        // Choisir les coordonnées
+        int x = AnsiConsole.Ask<int>("[yellow]Enter the X coordinate (1 to 5):[/]") - 1;
+        int y = AnsiConsole.Ask<int>("[yellow]Enter the Y coordinate (1 to 5):[/]") - 1;
+
+        if (!_parkService.IsValidCoordinate(x, y))
+        {
+            AnsiConsole.MarkupLine("[red]Invalid coordinates![/]");
+            AnsiConsole.MarkupLine("Press any key to return...");
+            Console.ReadKey(true);
+            return;
+        }
+
+        var grid = _parkService.GetGrid();
+        var cell = grid[y, x];
+
+        if (cell.IsOccupied)
+        {
+            AnsiConsole.MarkupLine("[red]This cell is already occupied by another ride![/]");
+        }
+        else
+        {
+            cell.Ride = selectedRide;
+            AnsiConsole.MarkupLine($"[green]Ride {selectedRide.Name} placed successfully at ({x + 1},{y + 1})![/]");
+        }
+
+        AnsiConsole.MarkupLine("Press any key to return...");
+        Console.ReadKey(true);
     }
 
     private static void RemoveRide()
     {
+        AnsiConsole.Clear();
+
+        int x = AnsiConsole.Ask<int>("[yellow]Enter the X coordinate of the ride to remove (1 to 5):[/]") - 1;
+        int y = AnsiConsole.Ask<int>("[yellow]Enter the Y coordinate of the ride to remove (1 to 5):[/]") - 1;
+
+        if (!_parkService.IsValidCoordinate(x, y))
+        {
+            AnsiConsole.MarkupLine("[red]Invalid coordinates![/]");
+            AnsiConsole.MarkupLine("Press any key to return...");
+            Console.ReadKey(true);
+            return;
+        }
+
+        var grid = _parkService.GetGrid();
+        var cell = grid[y, x];
+
+        if (!cell.IsOccupied)
+        {
+            AnsiConsole.MarkupLine("[red]No ride found at this location![/]");
+        }
+        else
+        {
+            var removedRide = cell.Ride;
+            cell.Ride = null;
+            AnsiConsole.MarkupLine($"[green]Ride {removedRide?.Name} removed from ({x + 1},{y + 1})![/]");
+        }
+
+        AnsiConsole.MarkupLine("Press any key to return...");
+        Console.ReadKey(true);
     }
 }
