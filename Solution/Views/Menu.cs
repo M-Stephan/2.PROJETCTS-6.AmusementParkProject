@@ -8,9 +8,10 @@ namespace Park
 
         public void DisplayMenu()
         {
-            GridState gridState = GridState();
+            GridState gridState = new();
             GridPark gridPark = new();
-            InventoryViews inventoryViews = new();
+            Inventory inventory = new();
+            inventory.LoadDefaultItems();
 
             // Entry point of the application - displays welcome screen and main menu
             AnsiConsole.Write(
@@ -40,7 +41,7 @@ namespace Park
                         gridPark.DisplayGrid(gridState.Grid);
                         break;
                     case "View Ride Inventory":
-                        inventoryViews.DisplayInventory();
+                        inventory.ShowInventory();
                         break;
                     case "Place a Ride":
                         /*PlaceRide() */
