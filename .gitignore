@@ -1,0 +1,52 @@
+# Ignorer les dossiers Git, Visual Studio, GitHub workflows
+.git/
+.vs/
+.github/workflows/
+
+# Fichiers de build .NET
+bin/
+obj/
+out/
+
+# Fichiers utilisateur de Visual Studio
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Dossiers et fichiers temporaires
+*.log
+*.tmp
+*.bak
+*.cache
+*.vspscc
+*.vssscc
+
+# Config locale
+launchSettings.json
+
+# Fichiers de dépendances lock
+project.lock.json
+project.fragment.lock.json
+
+# Ignorer les fichiers système
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Dossiers Mac
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Dossiers Linux
+*.swp
+*~
+
+# Rider / JetBrains
+.idea/
+*.iml
+
+# Node modules (au cas où tu mélanges avec du JS)
+node_modules/
