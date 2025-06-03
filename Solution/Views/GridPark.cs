@@ -28,7 +28,7 @@ namespace Park
             table.ShowRowSeparators();
             AnsiConsole.Write(table);
 
-            AnsiConsole.MarkupLine("\n[grey]Press Any key to exit...[/]");
+            AnsiConsole.MarkupLine("\n[grey]Press any key to return at the main menu[/]");
             Console.ReadKey(true);
         }
     }
