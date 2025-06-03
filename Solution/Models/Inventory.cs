@@ -1,50 +1,56 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Park
 {
     public interface IInventory
     {
-        public void AddItem(Item item);
+        void AddItem(Item item);
+        void RemoveItem(Item item);
     }
 
     public class Inventory : IInventory
     {
-        public List<Item> _items { get; private set; }
+        public List<Item> Items { get; private set; }
 
         public Inventory()
         {
-            _items = new();
+            Items = new();
         }
 
-        public void AddItem(Item item)
+        public void AddItem(Item newItem)
         {
-            _items.Add(item);
+            var existingItem = Items.FirstOrDefault(i => i._itemName == newItem._itemName);
+
+            if (existingItem != null)
+            {
+                existingItem._itemCount += newItem._itemCount;
+            }
+            else
+            {
+                Items.Add(newItem);
+            }
         }
 
-        public void RemoveAttraction(Item item)
+        public void RemoveItem(Item item)
         {
-            _items.Remove(item);
+            var existingItem = Items.FirstOrDefault(i => i._itemName == item._itemName);
+
+            if (existingItem != null)
+            {
+                Items.Remove(existingItem);
+            }
+            else
+            {
+                Console.WriteLine("You don't have this attraction in your inventory!");
+            }
         }
 
         public void ShowInventory()
         {
             InventoryViews inventoryViews = new();
-            inventoryViews.DisplayInventory(_items);
-        }
-
-        public void LoadDefaultItems()
-        {
-            _items.AddRange(new List<Item>
-            {
-                new Item("Ferris wheel", "[gold1]🎡[/]", 3),
-                new Item("Roller Coaster", "[red]🎢[/]", 6),
-                new Item("Carousel", "[orchid1]🎠[/]", 2),
-                new Item("Food Stand", "[yellow1]🌭[/]", 4),
-                new Item("Ticket Booth", "[blue]🎫[/]", 1),
-                new Item("Bumper Cars", "[orange1]🚗[/]", 2),
-                new Item("Water Slide", "[deepskyblue1]🌊[/]", 2),
-                new Item("Swing Ride", "[violet]🎑[/]", 1)
-            });
+            inventoryViews.DisplayInventory(Items);
         }
     }
 }

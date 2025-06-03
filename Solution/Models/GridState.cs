@@ -19,12 +19,12 @@ namespace Park
                     Grid[i, j] = "[green]🟩[/]";
         }
 
-        public void PlaceAttraction(int x, int y, string attractionSymbol)
+        public void PlaceAttraction(int x, int y, string attraction)
         {
             if (x < 0 || x >= 10 || y < 0 || y >= 10)
-                throw new ArgumentOutOfRangeException("Coordonnées hors limites.");
+                throw new ArgumentOutOfRangeException("Out of range");
 
-            Grid[x, y] = attractionSymbol;
+            Grid[x, y] = attraction;
         }
     }
 }

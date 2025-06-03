@@ -4,14 +4,13 @@ namespace Park
 {
     public class Menu
     {
-
-
         public void DisplayMenu()
         {
             GridState gridState = new();
             GridPark gridPark = new();
             Inventory inventory = new();
-            inventory.LoadDefaultItems();
+            ShopViews shopView = new();
+            Banking banking = new();
 
             // Entry point of the application - displays welcome screen and main menu
             AnsiConsole.Write(
@@ -32,7 +31,7 @@ namespace Park
                 var choice = AnsiConsole.Prompt(
                     new SelectionPrompt<string>()
                         .Title("[green]Amusement Park Menu[/]")
-                        .AddChoices("Display Park Grid", "View Ride Inventory", "Place a Ride", "Remove a Ride", "Exit"));
+                        .AddChoices("Display Park Grid", "View Bank", "View Inventory", "Go to the Shop", "Place a Ride", "Remove a Ride", "Exit"));
 
                 // Perform action based on user's menu choice
                 switch (choice)
@@ -40,8 +39,14 @@ namespace Park
                     case "Display Park Grid":
                         gridPark.DisplayGrid(gridState.Grid);
                         break;
-                    case "View Ride Inventory":
+                    case "View Bank":
+                        banking.ShowAmount();
+                        break;
+                    case "View Inventory":
                         inventory.ShowInventory();
+                        break;
+                    case "Go to the Shop":
+                        shopView.ShopMenu(inventory, banking);
                         break;
                     case "Place a Ride":
                         /*PlaceRide() */
