@@ -11,6 +11,8 @@ namespace Park
             Inventory inventory = new();
             ShopViews shopView = new();
             Banking banking = new();
+            MooveAttraction mover = new();
+
 
             // Entry point of the application - displays welcome screen and main menu
             AnsiConsole.Write(
@@ -49,12 +51,10 @@ namespace Park
                         shopView.ShopMenu(inventory, banking);
                         break;
                     case "Place a Ride":
-                        /*PlaceRide() */
-                        Console.WriteLine("Standby");
+                        mover.PlaceItem(inventory, gridState);
                         break;
                     case "Remove a Ride":
-                        /*RemoveRide() */
-                        Console.WriteLine("Standby");
+                        mover.RemoveItem(inventory, gridState);
                         break;
                     case "Exit":
                         Environment.Exit(0);

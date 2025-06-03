@@ -39,13 +39,19 @@ namespace Park
 
             if (existingItem != null)
             {
-                Items.Remove(existingItem);
+                existingItem._itemCount--;
+
+                if (existingItem._itemCount <= 0)
+                {
+                    Items.Remove(existingItem);
+                }
             }
             else
             {
                 Console.WriteLine("You don't have this attraction in your inventory!");
             }
         }
+
 
         public void ShowInventory()
         {
