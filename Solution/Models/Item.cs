@@ -1,20 +1,37 @@
-using System.Collections.Generic;
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
 
-namespace Park
+namespace Solution.Models;
+
+public class Item
 {
-    public class Item
+    // Constructor used when creating a new item
+    public Item(string itemName, string itemIcon, int itemCount, int itemCost, string itemDescription,
+        int popularity = 0)
     {
-        public string _itemName { get; set; }
-        public string _itemIcon { get; set; }
-        public int _itemCount { get; set; }
-        public int _itemCost { get; set; }
-
-        public Item(string itemName, string itemIcon, int itemCount, int itemCost)
-        {
-            _itemName = itemName;
-            _itemIcon = itemIcon;
-            _itemCount = itemCount;
-            _itemCost = itemCost;
-        }
+        ItemName = itemName;
+        ItemIcon = itemIcon;
+        ItemCost = itemCost;
+        ItemDescription = itemDescription;
+        Popularity = popularity;
     }
+
+    // Required by MongoDB for deserialization
+    public Item()
+    {
+    }
+
+    [BsonId]
+    [BsonRepresentation(BsonType.ObjectId)]
+    public string? Id { get; set; }
+
+    [BsonElement("name")] public string ItemName { get; set; }
+
+    [BsonElement("icon")] public string ItemIcon { get; set; }
+
+    [BsonElement("cost")] public int ItemCost { get; set; }
+
+    [BsonElement("description")] public string ItemDescription { get; set; }
+
+    [BsonElement("popularity")] public int Popularity { get; set; }
 }

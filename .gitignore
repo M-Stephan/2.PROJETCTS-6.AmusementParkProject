@@ -2,6 +2,7 @@
 .git/
 .vs/
 .github/workflows/
+.env
 
 # Fichiers de build .NET
 bin/

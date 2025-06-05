@@ -1,29 +1,50 @@
+using MongoDB.Driver;
+using Solution.Models;
 using Spectre.Console;
-using System;
-using System.Collections.Generic;
 
-namespace Park
+namespace Solution.Views;
+
+public class InventoryViews
 {
-    public class InventoryViews
+    private readonly IMongoCollection<Item> _itemCollection;
+
+    public InventoryViews(IMongoCollection<Item> itemCollection)
     {
-        public void DisplayInventory(List<Item> items)
+        _itemCollection = itemCollection;
+    }
+
+    public void DisplayInventory(List<InventoryEntry> inventoryEntries)
+    {
+        if (inventoryEntries == null || inventoryEntries.Count == 0)
         {
-            var table = new Table();
-            table.AddColumn("Icon");
-            table.AddColumn("Name");
-            table.AddColumn("Amount");
-
-            foreach (var item in items)
-            {
-                table.AddRow(item._itemIcon, item._itemName, item._itemCount.ToString());
-            }
-
-            table.ShowRowSeparators();
-            table.Border(TableBorder.Rounded);
-            AnsiConsole.Write(table);
-
-            AnsiConsole.MarkupLine("\n[grey]Press any key to return at the main menu[/]");
+            AnsiConsole.MarkupLine("[yellow]Your inventory is empty.[/]");
+            // AnsiConsole.MarkupLine("\n[grey]Press any key to return to the main menu[/]");
             Console.ReadKey(true);
+            return;
         }
+
+        var table = new Table()
+            .Border(TableBorder.Rounded)
+            .Title("[underline bold cyan]Inventory[/]")
+            .ShowRowSeparators();
+
+        table.AddColumn("[bold]Icon[/]");
+        table.AddColumn("[bold]Name[/]");
+        table.AddColumn("[bold]Description[/]");
+        table.AddColumn("[bold]Amount[/]");
+
+        foreach (var entry in inventoryEntries)
+        {
+            var item = _itemCollection.Find(i => i.Id == entry.ItemId).FirstOrDefault();
+
+            if (item != null)
+                table.AddRow(item.ItemIcon, item.ItemName, item.ItemDescription, entry.Count.ToString());
+            else
+                table.AddRow("[red]?[/]", $"[red]Unknown Item ID:[/] {entry.ItemId}", entry.Count.ToString());
+        }
+
+        AnsiConsole.Write(table);
+        //AnsiConsole.MarkupLine("\n[grey]Press any key to return to the main menu[/]");
+        Console.ReadKey(true);
     }
 }
