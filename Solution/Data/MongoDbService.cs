@@ -2,7 +2,7 @@ using dotenv.net;
 using MongoDB.Driver;
 using Solution.Models;
 
-namespace Solution.Data;
+namespace Solution.Services;
 
 public class MongoDbService
 {
@@ -19,34 +19,24 @@ public class MongoDbService
                 "MongoDB connection string not found in environment variables.");
 
         _client = new MongoClient(connectionString);
-        _database = _client.GetDatabase("park"); // Use your actual database name
+        _database = _client.GetDatabase("park");
     }
 
-    public IMongoCollection<Game> GetGameCollection()
-    {
-        return _database.GetCollection<Game>("games");
-    }
+    // Collections
+    public IMongoCollection<Game> GetGameCollection() => _database.GetCollection<Game>("games");
+    public IMongoCollection<Item> GetItemCollection() => _database.GetCollection<Item>("items");
+    public IMongoCollection<AuctionItem> GetAuctionCollection() => _database.GetCollection<AuctionItem>("auctions");
 
-    public IMongoCollection<Item> GetItemCollection()
-    {
-        return _database.GetCollection<Item>("items");
-    }
+    // Game retrieval
+    public List<Game> GetAllGames() => GetGameCollection().Find(_ => true).ToList();
 
-    public IMongoCollection<AuctionItem> GetAuctionCollection()
-    {
-        return _database.GetCollection<AuctionItem>("auctions");
-    }
+    public Game? GetGameById(string id) =>
+        GetGameCollection().Find(game => game.Id == id).FirstOrDefault();
 
-    public List<Game> GetAllGames()
-    {
-        return GetGameCollection().Find(_ => true).ToList();
-    }
+    public Game? GetGameByNickname(string name) =>
+        GetGameCollection().Find(game => game.Name == name).FirstOrDefault();
 
-    public Game? GetGameByNickname(string name)
-    {
-        return GetGameCollection().Find(game => game.Name == name).FirstOrDefault();
-    }
-
+    // Game save or update
     public void SaveGame(Game game)
     {
         var collection = GetGameCollection();
@@ -64,10 +54,21 @@ public class MongoDbService
         }
     }
 
+    // Deletion
     public void DeleteGame(string name)
     {
         var collection = GetGameCollection();
         var filter = Builders<Game>.Filter.Eq(g => g.Name, name);
         collection.DeleteOne(filter);
     }
+
+    public void DeleteUnsoldAuctionItemsBySellerId(string sellerGameId)
+    {
+        var filter = Builders<AuctionItem>.Filter.And(
+            Builders<AuctionItem>.Filter.Eq(ai => ai.SellerGameId, sellerGameId),
+            Builders<AuctionItem>.Filter.Eq(ai => ai.IsSold, false)
+        );
+        GetAuctionCollection().DeleteMany(filter);
+    }
+
 }

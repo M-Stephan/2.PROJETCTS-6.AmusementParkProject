@@ -1,6 +1,4 @@
 ﻿using MongoDB.Driver;
-using Solution.Data;
-using Solution.Interfaces;
 using Solution.Models;
 using Spectre.Console;
 

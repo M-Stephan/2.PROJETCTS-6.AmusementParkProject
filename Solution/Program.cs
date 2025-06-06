@@ -1,5 +1,6 @@
 ﻿using Solution.Data;
 using Solution.Data.Seeders;
+using Solution.Services;
 using Solution.Views;
 
 namespace Solution

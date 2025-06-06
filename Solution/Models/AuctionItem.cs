@@ -5,13 +5,28 @@ namespace Solution.Models;
 
 public class AuctionItem
 {
-    [BsonId] public ObjectId Id { get; set; }
+    [BsonId]
+    [BsonRepresentation(BsonType.ObjectId)]
 
-    public string ItemId { get; set; } = null!;
-    public string SellerName { get; set; } = null!;
-    public int Price { get; set; } 
-    public int Quantity { get; set; } 
-    public string? BuyerName { get; set; } 
-    public bool IsSold { get; set; } 
-    public DateTime CreatedAt { get; set; }
+    public string? Id { get; set; }
+
+    [BsonElement("item_id")]
+    [BsonRepresentation(BsonType.ObjectId)]
+    public string ItemId { get; set; }
+
+    [BsonElement("seller_id")]
+    [BsonRepresentation(BsonType.ObjectId)]
+    public string SellerGameId { get; set; } = null!;
+
+    [BsonElement("buyer_id")]
+    [BsonRepresentation(BsonType.ObjectId)]
+    public string? BuyerGameId { get; set; }
+
+    [BsonElement("price")] public int Price { get; set; }
+
+    [BsonElement("quantity")] public int Quantity { get; set; }
+
+    [BsonElement("is_sold")] public bool IsSold { get; set; }
+
+    [BsonElement("created_at")] public DateTime CreatedAt { get; set; }
 }

@@ -2,15 +2,21 @@ using Spectre.Console;
 
 namespace Solution.Services;
 
-public class MoneyGameService
+/// <summary>
+/// Mini-game that allows the player to guess a number and win money if correct.
+/// </summary>
+public class MoneyGame
 {
-    private readonly BankingService _bankingService;
+    private readonly BankingService _banking;
 
-    public MoneyGameService(BankingService bankingService)
+    public MoneyGame(BankingService banking)
     {
-        _bankingService = bankingService;
+        _banking = banking;
     }
 
+    /// <summary>
+    /// Starts the guessing game. Rewards the player with money on a correct guess.
+    /// </summary>
     public void Play()
     {
         AnsiConsole.Clear();
@@ -19,7 +25,7 @@ public class MoneyGameService
                 .Color(Color.Green));
 
         var random = new Random();
-        var secretNumber = random.Next(1, 6); // Random number from 1 to 5
+        var secretNumber = random.Next(1, 6);
 
         var userGuess = AnsiConsole.Prompt(
             new TextPrompt<int>("[bold cyan]🎯 Guess a number between [underline]1[/] and [underline]5[/]:[/]")
@@ -30,15 +36,13 @@ public class MoneyGameService
         if (userGuess == secretNumber)
         {
             var reward = 5000;
-            _bankingService._money += reward;
+            _banking._money += reward;
 
             AnsiConsole.MarkupLine("\n[bold green]✅ Correct![/]");
             AnsiConsole.MarkupLine($"[bold yellow]💰 You won [underline]{reward}[/] coins![/]");
+
             AnsiConsole.Status()
-                .Start("Updating bank account...", ctx =>
-                {
-                    Thread.Sleep(1000); // Simulate processing
-                });
+                .Start("Updating bank account...", ctx => { Thread.Sleep(1000); });
         }
         else
         {
@@ -46,7 +50,6 @@ public class MoneyGameService
             AnsiConsole.MarkupLine($"[yellow]The correct number was [underline]{secretNumber}[/].[/]");
         }
 
-        AnsiConsole.MarkupLine("\n[grey]🎮 Press any key to return to the menu...[/]");
         Console.ReadKey(true);
     }
 }

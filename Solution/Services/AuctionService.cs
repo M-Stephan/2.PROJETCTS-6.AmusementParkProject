@@ -1,4 +1,5 @@
 using MongoDB.Driver;
+using Park;
 using Solution.Data;
 using Solution.Interfaces;
 using Solution.Models;
@@ -6,12 +7,18 @@ using Spectre.Console;
 
 namespace Solution.Services;
 
+/// <summary>
+/// Handles auction-related operations such as listing, retrieving, and buying auction items.
+/// </summary>
 public class AuctionService : IAuction
 {
     private readonly IMongoCollection<AuctionItem> _auctionCollection;
     private readonly IMongoCollection<Item> _itemCollection;
     private readonly MongoDbService _mongoService;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AuctionService"/> class.
+    /// </summary>
     public AuctionService(IMongoCollection<AuctionItem> auctionCollection, IMongoCollection<Item> itemCollection,
         MongoDbService mongoService)
     {
@@ -20,35 +27,44 @@ public class AuctionService : IAuction
         _mongoService = mongoService;
     }
 
-    // Returns all active (not sold) auction items regardless of seller
+    /// <summary>
+    /// Retrieves all active (unsold) auction items.
+    /// </summary>
     public List<AuctionItem> GetAllActiveItems()
     {
         return _auctionCollection.Find(x => !x.IsSold).ToList();
     }
 
-    // Returns active auction items excluding those sold by the buyer (for buying)
-    public List<AuctionItem> GetAvailableItemsToBuy(string buyerName)
+    /// <summary>
+    /// Retrieves all auction items available to buy for a specific game (excluding that game's own listings).
+    /// </summary>
+    public List<AuctionItem> GetAvailableItemsToBuy(string currentGameId)
     {
-        return _auctionCollection.Find(x => !x.IsSold && x.SellerName != buyerName).ToList();
+        return _auctionCollection.Find(x => !x.IsSold && x.SellerGameId != currentGameId).ToList();
     }
 
-    public void ListItem(string sellerName, InventoryService inventoryService)
+    /// <summary>
+    /// Allows a player to list an item from their inventory for auction.
+    /// </summary>
+    public void ListItem(Game currentGame, InventoryService inventory)
     {
         AnsiConsole.Write(new Rule("[bold blue]List Item on Auction[/]"));
 
-        if (inventoryService.Entries.Count == 0)
+        if (inventory.Entries.Count == 0)
         {
-            AnsiConsole.MarkupLine("[bold red][!] Your inventory is empty![/]");
+            AnsiConsole.MarkupLine("[bold red]Your inventory is empty![/]");
             Console.ReadKey(true);
             return;
         }
 
-        var itemsForSale = inventoryService.Entries.Select(entry =>
+        // Map inventory entries to displayable item options
+        var itemsForSale = inventory.Entries.Select(entry =>
         {
             var item = _itemCollection.Find(i => i.Id == entry.ItemId).FirstOrDefault();
             return item == null ? null : new { item, entry.Count };
         }).Where(x => x != null).ToList();
 
+        // Prompt user to choose which item to list
         var choices = itemsForSale.Select(x => $"{x!.item.ItemName} (x{x.Count})").ToList();
         choices.Add("[red]Go Back[/]");
 
@@ -63,8 +79,8 @@ public class AuctionService : IAuction
 
         var selected = itemsForSale.First(x => $"{x!.item.ItemName} (x{x.Count})" == choice);
 
+        // Ask for quantity to list
         int quantityToList;
-
         if (selected.Count == 1)
         {
             quantityToList = 1;
@@ -86,14 +102,14 @@ public class AuctionService : IAuction
                                 : ValidationResult.Error("[red]Invalid quantity.[/]");
                         }));
 
-                if (quantityInput.ToLower() == "back")
-                    return;
+                if (quantityInput.ToLower() == "back") return;
 
                 quantityToList = int.Parse(quantityInput);
                 break;
             }
         }
 
+        // Ask for price per item
         int price;
         while (true)
         {
@@ -105,47 +121,52 @@ public class AuctionService : IAuction
                         if (input.ToLower() == "back") return ValidationResult.Success();
                         return int.TryParse(input, out var val) && val > 0
                             ? ValidationResult.Success()
-                            : ValidationResult.Error("[red]Invalid price. Please enter a positive whole number.[/]");
+                            : ValidationResult.Error("[red]Invalid price.[/]");
                     }));
 
-            if (priceInput.ToLower() == "back")
-                return;
+            if (priceInput.ToLower() == "back") return;
 
             price = int.Parse(priceInput);
             break;
         }
 
+        // Create and insert new auction item
         var auctionItem = new AuctionItem
         {
             ItemId = selected.item.Id!,
-            SellerName = sellerName,
+            SellerGameId = currentGame.Id.ToString(),
             Price = price,
             Quantity = quantityToList,
-            BuyerName = null,
             IsSold = false,
             CreatedAt = DateTime.UtcNow
         };
 
+        // Remove listed items from player's inventory
         for (var i = 0; i < quantityToList; i++)
-            inventoryService.RemoveItem(selected.item.Id!);
+            inventory.RemoveItem(selected.item.Id!);
 
         _auctionCollection.InsertOne(auctionItem);
 
         AnsiConsole.Write(
             new Panel(
-                    $"[green]:moneybag: {selected.item.ItemName} x{quantityToList}[/] has been listed for [yellow]${price}[/] each.")
-                .Border(BoxBorder.Double)
+                    $"[green]{selected.item.ItemName} x{quantityToList}[/] listed for [yellow]${price}[/] each.")
                 .Header("[green]Success[/]")
+                .Border(BoxBorder.Double)
                 .Padding(1, 0, 1, 0));
 
         Console.ReadKey(true);
     }
 
-    public bool BuyItem(string buyerName, InventoryService inventoryService, BankingService buyerMoney, AuctionItem auctionItem,
+    /// <summary>
+    /// Allows a player to purchase an auction item.
+    /// </summary>
+    /// <returns>True if the purchase was successful; otherwise, false.</returns>
+    public bool BuyItem(Game buyerGame, InventoryService inventory, BankingService banking, AuctionItem auctionItem,
         int quantityToBuy)
     {
         AnsiConsole.Write(new Rule("[bold blue]Processing Purchase[/]"));
 
+        // Fetch item details
         var item = _itemCollection.Find(i => i.Id == auctionItem.ItemId).FirstOrDefault();
         if (item == null)
         {
@@ -161,45 +182,58 @@ public class AuctionService : IAuction
 
         var totalCost = auctionItem.Price * quantityToBuy;
 
-        if (totalCost > buyerMoney._money)
+        if (totalCost > banking._money)
         {
             AnsiConsole.MarkupLine("[bold red][!] Not enough money to complete the purchase![/]");
             return false;
         }
 
-        var sellerGame = _mongoService.GetGameByNickname(auctionItem.SellerName);
+        // Retrieve seller's game object
+        var sellerGame = _mongoService.GetGameById(auctionItem.SellerGameId);
         if (sellerGame == null)
         {
-            AnsiConsole.MarkupLine("[red]Seller game not found.[/]");
+            AnsiConsole.MarkupLine("[red]Seller not found.[/]");
             return false;
         }
 
-        buyerMoney.RemoveMoney(totalCost);
+        // Perform transaction
+        banking.RemoveMoney(totalCost);
         sellerGame.Money += totalCost;
-        inventoryService.AddItem(auctionItem.ItemId, quantityToBuy);
+        inventory.AddItem(item.Id!, quantityToBuy);
 
-        if (auctionItem.Quantity == quantityToBuy)
+        // Update auction item state
+        auctionItem.Quantity -= quantityToBuy;
+        if (auctionItem.Quantity == 0)
             auctionItem.IsSold = true;
 
-        auctionItem.Quantity -= quantityToBuy;
-        auctionItem.BuyerName = buyerName;
+        auctionItem.BuyerGameId = buyerGame.Id.ToString();
 
-        var filter = Builders<AuctionItem>.Filter.Eq(x => x.Id, auctionItem.Id);
-        _auctionCollection.ReplaceOne(filter, auctionItem);
-
+        // Save changes to database
+        _auctionCollection.ReplaceOne(x => x.Id == auctionItem.Id, auctionItem);
         _mongoService.SaveGame(sellerGame);
 
-        AnsiConsole.Write(new Panel(
-                $"[green]You purchased [bold]{item.ItemName} x{quantityToBuy}[/] for [yellow]${totalCost}[/]![/]")
-            .Header("[green]Success[/]")
-            .Border(BoxBorder.Ascii));
+        AnsiConsole.Write(
+            new Panel(
+                    $"[green]You purchased[/] [bold]{item.ItemName} x{quantityToBuy}[/] [green]for[/] [yellow]{totalCost:C0}[/]")
+                .Header("[green]Success[/]")
+                .Border(BoxBorder.Ascii));
 
         return true;
     }
 
-
+    /// <summary>
+    /// Retrieves a specific item by ID from the item collection.
+    /// </summary>
     public Item? GetItemById(string itemId)
     {
         return _itemCollection.Find(i => i.Id == itemId).FirstOrDefault();
+    }
+
+    /// <summary>
+    /// Retrieves a game by its ID using the MongoDbService.
+    /// </summary>
+    public Game? GetGameById(string id)
+    {
+        return _mongoService.GetGameById(id);
     }
 }

@@ -1,10 +1,13 @@
-using Solution.Data;
+using Park;
 using Solution.Models;
 using Solution.Services;
 using Spectre.Console;
 
 namespace Solution.Views;
 
+/// <summary>
+/// Handles persistence operations for saving and deleting game data and associated auctions.
+/// </summary>
 public class GamePersistenceManager
 {
     private readonly MongoDbService _mongoService;
@@ -14,22 +17,27 @@ public class GamePersistenceManager
         _mongoService = new MongoDbService();
     }
 
-    public void SaveGame(Game currentGame, InventoryService inventoryService, BankingService bankingService, GridStateService gridStateService)
+    /// <summary>
+    /// Saves the current state of the game, including inventory, money, and grid layout.
+    /// </summary>
+    public void SaveGame(Game currentGame, InventoryService inventory, BankingService banking, GridStateService gridState)
     {
-        currentGame.Money = bankingService._money;
-        currentGame.Grid = gridStateService.ToListGrid();
+        currentGame.Money = banking._money;
+        currentGame.Grid = gridState.ToListGrid();
 
-        currentGame.Inventory = inventoryService.Entries.Select(e => new InventoryEntry
+        currentGame.Inventory = inventory.Entries.Select(e => new InventoryEntry
         {
             ItemId = e.ItemId,
             Count = e.Count
         }).ToList();
 
         _mongoService.SaveGame(currentGame);
-
         AnsiConsole.WriteLine();
     }
 
+    /// <summary>
+    /// Prompts the user to confirm and deletes the game and its related auction listings.
+    /// </summary>
     public void DeleteGame(Game currentGame)
     {
         AnsiConsole.Write(
@@ -44,7 +52,7 @@ public class GamePersistenceManager
             var choice = AnsiConsole.Prompt(
                 new SelectionPrompt<string>()
                     .Title("[bold yellow]Are you sure you want to delete this game?[/]")
-                    .AddChoices("❌ No, keep it","🗑️Yes, delete it"));
+                    .AddChoices("❌ No, keep it", "🗑️Yes, delete it"));
 
             if (choice.StartsWith("❌"))
             {
@@ -54,8 +62,10 @@ public class GamePersistenceManager
 
             if (choice.StartsWith("🗑️"))
             {
+                _mongoService.DeleteUnsoldAuctionItemsBySellerId(currentGame.Id);
                 _mongoService.DeleteGame(currentGame.Name);
-                AnsiConsole.MarkupLine($"[bold green]✅ Game '[yellow]{currentGame.Name}[/]' deleted successfully.[/]");
+
+                AnsiConsole.MarkupLine($"[bold green]✅ Game '[yellow]{currentGame.Name}[/]' and its unsold auctions were deleted successfully.[/]");
                 AnsiConsole.WriteLine();
                 Environment.Exit(0);
             }

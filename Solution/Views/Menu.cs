@@ -1,5 +1,6 @@
 ﻿using MongoDB.Driver;
-using Solution.Data;
+using Park;
+using Park.AuctionSystem;
 using Solution.Models;
 using Solution.Services;
 using Spectre.Console;
@@ -10,7 +11,7 @@ public class Menu
 {
     private readonly MongoDbService _mongoService;
     private readonly GamePersistenceManager _persistenceManager;
-    private MoneyGameService? _moneyGame;
+    private MoneyGame? _moneyGame;
 
     public Menu()
     {
@@ -83,9 +84,9 @@ public class Menu
         var gridState = new GridStateService(itemCollection);
         gridState.LoadFromListGrid(currentGame.Grid);
 
-        var banking = new BankingService { _money = currentGame.Money };
+        var banking = new BankingService() { _money = currentGame.Money };
         var inventory = new InventoryService();
-        _moneyGame = new MoneyGameService(banking);
+        _moneyGame = new MoneyGame(banking);
 
         foreach (var entry in currentGame.Inventory)
             inventory.AddItem(entry.ItemId, entry.Count);
@@ -165,22 +166,17 @@ public class Menu
                     break;
 
                 case 6:
-                    // Show spinner while playing MoneyGame
-                    AnsiConsole.Status()
-                        .Spinner(Spinner.Known.Aesthetic)
-                        .SpinnerStyle(Style.Parse("green"))
-                        .Start("Playing Money Gain...", ctx =>
-                        {
-                            _moneyGame!.Play();
-                            Thread.Sleep(1000); // simulate delay
-                        });
+                    AnsiConsole.MarkupLine("[grey]Launching Money Game...[/]");
+                    _moneyGame!.Play();
                     _persistenceManager.SaveGame(currentGame, inventory, banking, gridState);
                     break;
 
+
                 case 7:
-                    auctionUI.AuctionMenu(currentGame.Name, inventory, banking);
+                    auctionUI.AuctionMenu(currentGame, inventory, banking);
                     _persistenceManager.SaveGame(currentGame, inventory, banking, gridState);
                     break;
+
 
                 case 8:
                     _persistenceManager.DeleteGame(currentGame);
@@ -207,12 +203,20 @@ public class Menu
                 .Color(Color.SpringGreen3));
 
         var name = AnsiConsole.Ask<string>("[green]Hi, how should I call you?[/]");
-        return new Game
+
+        var newGame = new Game
         {
             Name = name,
             Money = 25000,
             Inventory = new List<InventoryEntry>(),
             Grid = new GridStateService(itemCollection).ToListGrid()
         };
+
+        // Save new game to MongoDB immediately
+        _mongoService.SaveGame(newGame);
+
+        AnsiConsole.MarkupLine("[green]New game created and saved to database![/]");
+
+        return newGame;
     }
 }

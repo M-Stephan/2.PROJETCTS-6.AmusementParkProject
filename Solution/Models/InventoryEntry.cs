@@ -5,7 +5,9 @@ namespace Solution.Models;
 
 public class InventoryEntry
 {
+    [BsonElement("item_id")]
     [BsonRepresentation(BsonType.ObjectId)]
     public string ItemId { get; set; } = string.Empty;
-    public int Count { get; set; }
+
+    [BsonElement("count")] public int Count { get; set; }
 }
