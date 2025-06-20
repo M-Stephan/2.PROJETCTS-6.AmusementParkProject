@@ -202,7 +202,23 @@ public class Menu
                 .Centered()
                 .Color(Color.SpringGreen3));
 
-        var name = AnsiConsole.Ask<string>("[green]Hi, how should I call you?[/]");
+        string name;
+
+        while (true)
+        {
+            name = AnsiConsole.Ask<string>("[green]Hi, how should I call you?[/]");
+
+            // Check if a game with this name already exists
+            var existingGame = _mongoService.GetGameByNickname(name);
+            if (existingGame != null)
+            {
+                AnsiConsole.MarkupLine("[red]This game already exists. Please choose a different one.[/]");
+            }
+            else
+            {
+                break;
+            }
+        }
 
         var newGame = new Game
         {
